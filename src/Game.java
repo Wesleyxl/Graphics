@@ -1,19 +1,27 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferStrategy;
+import java.awt.image.BufferedImage;
 
 public class Game extends Canvas implements Runnable {
 
     // variables
     public static JFrame frame;
+
     private boolean isRunning = true;
+    private final int SCALE = 4;
+    private final int WIDTH = 160;
+    private final int HEIGHT = 120;
+    private Thread thread;
+
+    private final BufferedImage image;
 
     public Game()
     {
-        int WIDTH = 160;
-        int HEIGHT = 120;
-        int SCALE = 4;
         this.setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
         initFrame();
+
+        image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
     }
 
     public void initFrame()
@@ -29,15 +37,22 @@ public class Game extends Canvas implements Runnable {
 
     public synchronized void start()
     {
-        Thread thread = new Thread(this);
+        thread = new Thread(this);
         isRunning = true;
         thread.start();
     }
 
+
     public synchronized void stop()
     {
-    
+        isRunning = false;
+        try {
+            thread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
+
 
     public static void main (String[] args)
     {
@@ -52,11 +67,24 @@ public class Game extends Canvas implements Runnable {
 
     public void render()
     {
+        BufferStrategy bs = this.getBufferStrategy();
+        if (bs == null)
+        {
+            this.createBufferStrategy(3);
+            return;
+        }
 
+        Graphics g = image.getGraphics();
+        g.setColor(new Color(19,19,19));
+        g.fillRect(0, 0, WIDTH, HEIGHT);
+        g = bs.getDrawGraphics();
+        g.drawImage(image, 0, 0, WIDTH * SCALE, HEIGHT * SCALE, null);
+        bs.show();
     }
 
     @Override
-    public void run() {
+    public void run()
+    {
         long lastTime = System.nanoTime();
         double amountOfTicks = 60.0;
         double ns = 1000000000 / amountOfTicks;
@@ -86,5 +114,6 @@ public class Game extends Canvas implements Runnable {
                 timer += 1000;
             }
         }
+        stop();
     }
 }
